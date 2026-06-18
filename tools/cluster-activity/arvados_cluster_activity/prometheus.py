@@ -6,6 +6,9 @@
 from datetime import timedelta, timezone
 
 def get_metric_usage(prom, start_time, end_time, metric, resampleTo="min"):
+    if not prom:
+        return
+
     from prometheus_api_client.utils import parse_datetime
     from prometheus_api_client import PrometheusConnect, MetricsList, Metric
     import pandas
@@ -42,16 +45,17 @@ def get_metric_usage(prom, start_time, end_time, metric, resampleTo="min"):
         yield rs
 
 def get_data_usage(prom, timestamp, cluster):
+    if not prom:
+        return (None, None)
+
     from prometheus_api_client import PrometheusConnect, MetricsList, Metric
 
     metric_data = prom.get_current_metric_value(metric_name='arvados_keep_total_bytes',
                                                 label_config={"cluster": cluster},
                                                 params={"time": timestamp.timestamp()})
-
     metric_object_list = MetricsList(metric_data)
-
-    if len(metric_data) == 0:
-        return
+    if not metric_data:
+        return (None, None)
 
     my_metric_object = metric_object_list[0] # one of the metrics from the list
     value = my_metric_object.metric_values.iloc[0]["y"]
@@ -59,11 +63,9 @@ def get_data_usage(prom, timestamp, cluster):
     metric_data = prom.get_current_metric_value(metric_name='arvados_keep_dedup_byte_ratio',
                                                 label_config={"cluster": cluster},
                                                 params={"time": timestamp.timestamp()})
-
-    if len(metric_data) == 0:
+    if not metric_data:
         return (None, None)
 
     my_metric_object = MetricsList(metric_data)[0]
     dedup_ratio = my_metric_object.metric_values.iloc[0]["y"]
-
     return value, dedup_ratio

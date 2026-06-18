@@ -180,16 +180,22 @@ def main(arguments=None):
 
     logging.getLogger().setLevel(logging.INFO)
 
-    reporter = ClusterActivityReport(get_prometheus_client())
+    prom_client = get_prometheus_client()
+    reporter = ClusterActivityReport(
+        since,
+        to,
+        prom_client=prom_client,
+        exclude=args.exclude,
+    )
     if args.cost_report_file:
         with open(args.cost_report_file, "wt") as f:
-            reporter.csv_report(since, to, f, args.include_workflow_steps, args.columns, args.exclude)
+            reporter.csv_report(f, args.columns, include_steps=args.include_workflow_steps)
     else:
         logging.info("Use --cost-report-file to get a CSV file of workflow runs")
 
     if args.html_report_file:
         with open(args.html_report_file, "wt") as f:
-            f.write(reporter.html_report(since, to, args.exclude, args.include_workflow_steps))
+            f.write(reporter.html_report())
     else:
         logging.info("Use --html-report-file to get HTML report of cluster usage")
 
