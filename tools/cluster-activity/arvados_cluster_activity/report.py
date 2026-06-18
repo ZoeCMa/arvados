@@ -3,22 +3,23 @@
 #
 # SPDX-License-Identifier: AGPL-3.0
 
-import logging
-import ciso8601
-import arvados.util
-import re
-import csv
-import math
 import collections
+import csv
 import json
-from datetime import date, datetime, timedelta
-from typing import Dict, List
+import logging
+import math
+import re
 import statistics
 
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta
+from typing import Dict, List
+
+import arvados.util
+import ciso8601
+
 from arvados_cluster_activity.prometheus import get_metric_usage, get_data_usage
 from arvados_cluster_activity.reportchart import ReportChart
-
 
 @dataclass
 class WorkflowRunSummary:
