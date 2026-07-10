@@ -178,7 +178,9 @@ def main(arguments=None):
 
     args, since, to = parse_arguments(arguments)
 
-    logging.getLogger().setLevel(logging.INFO)
+    logging.basicConfig(
+        level=logging.INFO,
+    )
 
     prom_client = get_prometheus_client()
     reporter = ClusterActivityReport(
