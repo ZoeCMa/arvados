@@ -358,7 +358,7 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
     * base_command: list[str] --- Command-line argument list for invoking the
       external editor program. See `get_editor_cmdline()` for more.
     """
-    _tmpfile_extension = None
+    _file_type = None
 
     def __init__(self, initial_object=None, prefix=None, file_extension=None):
         """Arguments:
@@ -390,8 +390,8 @@ class ObjectEditingProcessBase(AbstractContextManager, abc.ABC):
         else:
             self.prefix = None
 
-        ext = self._tmpfile_extension or file_extension
-        self.suffix = f".{ext}" if ext else None
+        ext = self._file_type or file_extension
+        self.suffix = f".{ext.lower()}" if ext else None
 
         self.tmp_file = None
         self.base_command = self.get_editor_cmdline()
@@ -500,12 +500,36 @@ class EditingContentError(ValueError):
         return msg
 
 
-class JSONEditingProcess(ObjectEditingProcessBase):
+class LoadingHelper:
+    """Helper class to provide shared error handling and validation traits for
+    the temp file being edited (whose content shall be an Arvados object).
+    """
+    def raise_bad_format(
+        self, file: TextIO, err: Exception, line: int = 0, column: int = 0
+    ) -> NoReturn:
+        path = getattr(file, "name", "<unknown path>")
+        raise EditingContentError(
+            path=path, line=line, column=column, file_type=self._file_type,
+            original_exception=err
+        )
+
+    def validate_mapping(self, obj: Any, file: TextIO) -> Mapping[str, Any]:
+        if not isinstance(obj, Mapping):
+            path = getattr(file, "name", "<unknown path>")
+            format_name = self._file_type or "<unknown format>"
+            raise EditingContentError(
+                path=path,
+                original_exception=ValueError(
+                    f"{format_name} input has type '{type(obj).__name__}',"
+                    " not a valid Arvados object"
+                )
+            )
+        return obj
+
+
+class JSONEditingProcess(LoadingHelper, ObjectEditingProcessBase):
     """Subclass of editing process tuned for JSON files."""
-    _tmpfile_extension = "json"
-    input_error_type = functools.partial(
-        EditingContentError, file_type="JSON"
-    )
+    _file_type = "JSON"
 
     def __init__(self, *args, indent: int = 1, **kwargs):
         """Arguments:
@@ -520,61 +544,30 @@ class JSONEditingProcess(ObjectEditingProcessBase):
         return json.dump(obj, file, indent=self.indent)
 
     def deserialize(self, file: TextIO) -> Mapping[str, Any]:
-        path = getattr(file, "name", "<unknown path>")
         try:
             obj = json.load(file)
         except json.JSONDecodeError as err:
-            line = getattr(err, "lineno", 0)
-            column = getattr(err, "colno", 0)
-            raise self.input_error_type(
-                path=path, line=line, column=column,
-                original_exception=err
-            )
-        if not isinstance(obj, Mapping):
-            raise self.input_error_type(
-                path=path,
-                original_exception=ValueError(
-                    f"JSON input has type '{type(obj).__name__}',"
-                    " not a valid Arvados object"
-                )
-            )
-        return obj
+            self.raise_bad_format(file, err, err.lineno, err.colno)
+        return self.validate_mapping(obj, file)
 
 
-class YAMLEditingProcess(ObjectEditingProcessBase):
+class YAMLEditingProcess(LoadingHelper, ObjectEditingProcessBase):
     """Subclass of editing process tuned for YAML files."""
-    _tmpfile_extension = "yml"
-    input_error_type = functools.partial(
-        EditingContentError, file_type="YAML"
-    )
+    _file_type = "YAML"
 
     def serialize(self, obj: Mapping[str, Any], file: TextIO) -> None:
         return yaml.dump(obj, file)
 
     def deserialize(self, file: TextIO) -> Mapping[str, Any]:
-        path = getattr(file, "name", "<unknown path>")
         try:
             obj = yaml.load(file)
         except YAMLError as err:
-            if problem_mark := getattr(err, "problem_mark", None):
-                line = getattr(problem_mark, "line", 0)
-                column = getattr(problem_mark, "column", 0)
-            else:
-                line = 0
-                column = 0
-            raise self.input_error_type(
-                path=path, line=line, column=column,
-                original_exception=err
-            )
-        if not isinstance(obj, Mapping):
-            raise self.input_error_type(
-                path=path,
-                original_exception=ValueError(
-                    f"YAML input has type '{type(obj).__name__}',"
-                    " not a valid Arvados object"
-                )
-            )
-        return obj
+            # We only do "getattr" because YAMLError is sparsely documented.
+            problem_mark = getattr(err, "problem_mark", None)
+            line = getattr(problem_mark, "line", 0)
+            column = getattr(problem_mark, "column", 0)
+            self.raise_bad_format(file, err, line, column)
+        return self.validate_mapping(obj, file)
 
 
 class FullHelpOnErrorArgumentParser(argparse.ArgumentParser):
