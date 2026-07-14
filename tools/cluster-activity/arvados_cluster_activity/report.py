@@ -247,7 +247,7 @@ class WorkflowRunSummary:
         self.cost += run.cumulative_cost()
         self.count += 1
         self.runtime += runtime
-        self.users.add(run.user['uuid'])
+        self.users.add(run.request['modified_by_user_uuid'])
 
     def total_cost(self):
         return self.cost
