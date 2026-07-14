@@ -1780,7 +1780,7 @@ func splitToToks(src []byte, c rune, toks [][]byte) int {
 var ErrMalformedManifestText = errors.New("malformed manifest_text")
 
 func badmtxtErrorf(format string, args ...interface{}) error {
-	allArgs := append([]interface{}{ErrMalformedManifestText}, args...)
+	allArgs := slices.Concat([]interface{}{ErrMalformedManifestText}, args)
 	return fmt.Errorf("%w: "+format, allArgs...)
 }
 
