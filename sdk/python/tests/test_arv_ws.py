@@ -25,3 +25,14 @@ class ArvWsTestCase(unittest.TestCase, tutil.VersionChecker):
             with self.assertRaises(SystemExit):
                 self.run_ws(['--version'])
         self.assertVersionOutput(out, err)
+
+    def test_ctrl_c(self):
+        with (
+            self.assertRaises(SystemExit) as cm,
+            unittest.mock.patch(
+                "arvados.events.EventClient.run_forever",
+                unittest.mock.Mock(side_effect=KeyboardInterrupt)
+            )
+        ):
+            self.run_ws([])
+        self.assertEqual(cm.exception.code, 0)

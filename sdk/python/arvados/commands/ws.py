@@ -105,6 +105,7 @@ def main(arguments=None):
         else:
             print(json.dumps(ev))
 
+    status = 0
     try:
         ws = subscribe(arvados.api('v1'), filters, on_message, poll_fallback=args.poll_interval, last_log_id=last_log_id)
         if ws:
@@ -117,7 +118,9 @@ def main(arguments=None):
     except KeyboardInterrupt:
         pass
     except Exception as e:
+        status = 1
         logger.error(e)
     finally:
         if ws:
             ws.close()
+        sys.exit(status)
