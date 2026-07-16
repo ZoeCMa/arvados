@@ -714,10 +714,6 @@ install_contrib/R-sdk() {
   fi
 }
 
-install_sdk/cli() {
-    install_gem arvados-cli sdk/cli
-}
-
 install_services/login-sync() {
     install_gem arvados-login-sync services/login-sync
 }
@@ -863,12 +859,6 @@ test_contrib/R-sdk() {
   fi
 }
 
-test_sdk/cli() {
-    cd "$WORKSPACE/sdk/cli" \
-        && mkdir -p /tmp/keep \
-        && KEEP_LOCAL_STORE=/tmp/keep "$BUNDLE" exec rake test TESTOPTS=-v ${testargs[sdk/cli]}
-}
-
 test_contrib/java-sdk-v2() {
     env -C "$WORKSPACE/contrib/java-sdk-v2" gradle test ${testargs[contrib/java-sdk-v2]}
 }
@@ -910,7 +900,6 @@ install_deps() {
     do_install cmd/arvados-server go
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
-    do_install sdk/cli
     do_install services/api
     do_install services/keepproxy go
     do_install services/keep-web go
@@ -922,7 +911,6 @@ install_all() {
     do_install sdk/ruby-google-api-client
     do_install sdk/ruby
     do_install contrib/R-sdk
-    do_install sdk/cli
     do_install services/login-sync
     local pkg_dir
     if [[ -z ${skip[python3]} ]]; then
@@ -948,7 +936,6 @@ test_all() {
     do_test sdk/ruby-google-api-client
     do_test sdk/ruby
     do_test contrib/R-sdk
-    do_test sdk/cli
     do_test services/login-sync
     do_test contrib/java-sdk-v2
     local pkg_dir
@@ -994,12 +981,14 @@ help_interactive() {
 }
 
 declare -a failures
-declare -A skip
+declare -A skip=(
+    # By default, ignore references to since-removed components.
+    [sdk/cli]=1
+)
 declare -A only
 declare -A testargs
 
-declare -a pythonstuff
-pythonstuff=(
+declare -a pythonstuff=(
     # The ordering of sdk/python, tools/crunchstat-summary, and
     # sdk/cwl here is significant. See
     # https://dev.arvados.org/issues/19744#note-26
