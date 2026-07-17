@@ -27,7 +27,7 @@ class TestArvScriptRun:
     def test_help(self, script):
         completed_process = run_script([script, "-h"])
         assert completed_process.returncode == 0
-        assert completed_process.stdout
+        assert f"usage: {script}" in completed_process.stdout
         assert not completed_process.stderr
 
     def test_version(self, script):
@@ -43,4 +43,4 @@ class TestArvScriptRun:
         completed_process = run_script([script, "--x-invalid-argument"])
         assert completed_process.returncode == 2
         assert not completed_process.stdout
-        assert completed_process.stderr
+        assert f"usage: {script}" in completed_process.stderr
