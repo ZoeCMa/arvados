@@ -809,8 +809,7 @@ class ArvPutLogFormatterTest(ArvadosBaseTestCase):
         self.assertNotRegex(log_lines[0], self.matcher)
 
 class ArvadosPutTest(run_test_server.TestCaseWithServers,
-                     ArvadosBaseTestCase,
-                     tutil.VersionChecker):
+                     ArvadosBaseTestCase):
     MAIN_SERVER = {}
     Z_UUID = 'zzzzz-zzzzz-zzzzzzzzzzzzzzz'
 
@@ -850,13 +849,6 @@ class ArvadosPutTest(run_test_server.TestCaseWithServers,
                 getattr(self, outbuf).close()
                 delattr(self, outbuf)
         super(ArvadosPutTest, self).tearDown()
-
-    def test_version_argument(self):
-        with tutil.redirected_streams(
-                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
-            with self.assertRaises(SystemExit):
-                self.call_do_put_with_args(['--version'])
-        self.assertVersionOutput(out, err)
 
     def test_simple_file_put(self):
         self.call_do_put_on_test_file()

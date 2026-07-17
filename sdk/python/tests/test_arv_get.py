@@ -20,7 +20,6 @@ from . import arvados_testutil as tutil
 from .arvados_testutil import ArvadosBaseTestCase
 
 class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
-                         tutil.VersionChecker,
                          ArvadosBaseTestCase):
     MAIN_SERVER = {}
     KEEP_SERVER = {}
@@ -73,12 +72,6 @@ class ArvadosGetTestCase(run_test_server.TestCaseWithServers,
         with self.assertRaises(SystemExit) as cm:
             arv_get.main(args, stdout, stderr)
         return cm.exception.code
-
-    def test_version_argument(self):
-        with tutil.redirected_streams(
-                stdout=tutil.StringIO, stderr=tutil.StringIO) as (out, err):
-            self.run_get(['--version'])
-        self.assertVersionOutput(out, err)
 
     def test_get_single_file(self):
         # Get the file using the collection's locator

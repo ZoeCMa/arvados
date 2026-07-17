@@ -37,6 +37,7 @@ from googleapiclient import discovery
 from ruamel.yaml import YAML, YAMLError
 
 import arvados
+from arvados._version import __version__
 import arvados.commands._util as cmd_util
 
 
@@ -591,6 +592,7 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
     prog = "arv"
     global_args = frozenset((
         "dry_run",
+        "version",
         "verbose",
         "format",
         "subcommand",
@@ -618,6 +620,8 @@ class ArvCLIArgumentParser(FullHelpOnErrorArgumentParser):
             **kwargs
         )
         # Common flags to the main command.
+        self.add_argument("-e", "--version", action="version",
+                          version=f"%(prog)s {__version__}")
         self.add_argument("-n", "--dry-run", action="store_true",
                           help="Don't actually do anything")
         self.add_argument("-v", "--verbose", action="store_true",
