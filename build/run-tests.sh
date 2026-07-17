@@ -481,7 +481,6 @@ do_test() {
             | arvados_version.py \
             | doc \
             | lib/boot \
-            | lib/cli \
             | lib/cloud/azure \
             | lib/cloud/cloudtest \
             | lib/cloud/ec2 \
