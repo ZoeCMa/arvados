@@ -432,7 +432,8 @@ initialize() {
 
 install_env() {
     go mod download || fatal "Go deps failed"
-    which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed"
+    which goimports >/dev/null || go install golang.org/x/tools/cmd/goimports@latest || fatal "Go setup failed [goimports]"
+    which yq >/dev/null || go install github.com/mikefarah/yq/v4@v4.53.3 || fatal "Go setup failed [yq]"
 }
 
 retry() {

@@ -7,9 +7,6 @@
 ### Requirements for run-tests.sh itself
 -r requirements.build.txt
 
-# yq is used by run-tests.sh directly and controller tests
-yq ~= 3.4
-
 ### Requirements for Python tests generally
 # Required by older, unittest-style Python tests
 # Prefer using pytest.mark.parametrize in new tests

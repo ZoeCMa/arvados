@@ -61,7 +61,8 @@ TESTTMP="$ARVADOS_DIRECTORY/tmp/workbench2-integration"
 mkdir -p "$TESTTMP"
 ARVADOS_LOG="${TESTTMP}/arvados-workbench2-tests.log"
 TEST_CONFIG="$TESTTMP/arvados_config.yml"
-yq -y ".Clusters.zzzzz.API.VocabularyPath = \"$WORKSPACE/tools/example-vocabulary.json\"" \
+YQ="$(go env GOPATH)/bin/yq"
+"$YQ" -o yaml ".Clusters.zzzzz.API.VocabularyPath = \"$WORKSPACE/tools/example-vocabulary.json\"" \
    <"$WORKSPACE/tools/arvados_config.yml" >"$TEST_CONFIG"
 coproc arvboot ("$(go env GOPATH)/bin/arvados-server" boot \
     -type test \
@@ -93,7 +94,7 @@ exec 8<&"${wb2[0]}"; coproc consume_wb2_stdout (cat <&8 >&2)
 yarn run wait-on --timeout 300000 https-get://127.0.0.1:${WB2_PORT}
 
 echo "Running tests..."
-CYPRESS_system_token="$(yq -r .Clusters.zzzzz.SystemRootToken "$TEST_CONFIG")" \
+CYPRESS_system_token="$("$YQ" -r .Clusters.zzzzz.SystemRootToken "$TEST_CONFIG")" \
     CYPRESS_controller_url=${controllerURL} \
     CYPRESS_BASE_URL=https://127.0.0.1:${WB2_PORT} \
     yarn run cypress ${CYPRESS_MODE} "$@"

@@ -29,9 +29,10 @@ global.no-input true
 global.no-python-version-warning true
 install.progress-bar off
 EOF
-grep --no-filename -E '^yq[^-_[:alnum:]]' "$ARVADOS_DIRECTORY"/build/requirements.*.txt |
-    run_setup VENV3DIR xargs -d\\n bin/pip install
 cp --archive . "$DEV_HOME"
+
+# Install yq.
+run_setup "$DEV_HOME" go install 'github.com/mikefarah/yq/v4@v4.53.3'
 
 # Now install everything else directly to the volume.
 cd "$ARVADOS_DIRECTORY"

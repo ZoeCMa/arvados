@@ -115,29 +115,48 @@ func (s *LoginDockerSuite) setUpConfig(c *check.C) {
 		"host": s.netAddr,
 		"port": s.pgProxy.Port(),
 	}
-	err = s.updateConfig(".Clusters.zzzzz.PostgreSQL.Connection |= (. * $arg)", pgconn)
+	err = s.updateConfig("Clusters.zzzzz.PostgreSQL.Connection", keyMerge, pgconn)
 	c.Assert(err, check.IsNil)
 	intVal := make(map[string]string)
 	intURLs := make(map[string]interface{})
 	railsURL := "https://" + net.JoinHostPort(s.netAddr, s.railsProxy.Port())
 	intURLs[railsURL] = intVal
-	err = s.updateConfig(".Clusters.zzzzz.Services.RailsAPI.InternalURLs = $arg", intURLs)
+	err = s.updateConfig("Clusters.zzzzz.Services.RailsAPI.InternalURLs", keyAssign, intURLs)
 	c.Assert(err, check.IsNil)
 	intURLs = make(map[string]interface{})
 	intURLs["http://0.0.0.0:80"] = intVal
-	err = s.updateConfig(".Clusters.zzzzz.Services.Controller.InternalURLs = $arg", intURLs)
+	err = s.updateConfig("Clusters.zzzzz.Services.Controller.InternalURLs", keyAssign, intURLs)
 	c.Assert(err, check.IsNil)
 }
 
-// Update the test cluster configuration with the given yq expression.
-// The expression can use `$arg` to refer to the object passed in as `arg`.
-func (s *LoginDockerSuite) updateConfig(expr string, arg map[string]interface{}) error {
-	jsonArg, err := json.Marshal(arg)
+type keyAction int
+
+const (
+	keyAssign keyAction = iota
+	keyMerge
+)
+
+// Update the test cluster configuration key with the given value.
+// The action can be plain assignment (`keyAssign`) or merge-update
+// (`keyMerge`).
+func (s *LoginDockerSuite) updateConfig(key string, action keyAction, value map[string]interface{}) error {
+	jsonArg, err := json.Marshal(value)
 	if err != nil {
 		return err
 	}
-	cmd := exec.Command("yq", "-yi",
-		"--argjson", "arg", string(jsonArg),
+
+	var expr string
+
+	switch action {
+	case keyAssign:
+		expr = fmt.Sprintf(".%s = %s", key, jsonArg)
+	case keyMerge:
+		expr = fmt.Sprintf(".%s |= (. * %s)", key, jsonArg)
+	default:
+		return fmt.Errorf("unrecognized action on YAML key")
+	}
+
+	cmd := exec.Command("yq", "-i", "-o", "yaml",
 		expr, path.Join(s.tmpdir, "arvados.yml"))
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
@@ -148,7 +167,7 @@ func (s *LoginDockerSuite) enableLogin(key string) error {
 	login := make(map[string]interface{})
 	login["Test"] = map[string]bool{"Enable": false}
 	login[key] = map[string]bool{"Enable": true}
-	return s.updateConfig(".Clusters.zzzzz.Login |= (. * $arg)", login)
+	return s.updateConfig("Clusters.zzzzz.Login", keyMerge, login)
 }
 
 // SetUpTest does all the common preparation for a controller test container:
